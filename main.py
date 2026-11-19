@@ -60,6 +60,10 @@ def parse_args():
     parser.add_argument("--skip-eda",  action="store_true", help="Skip EDA plots")
     parser.add_argument("--no-smote",  action="store_true", help="Disable SMOTE balancing")
     parser.add_argument("--no-select", action="store_true", help="Disable feature selection")
+    parser.add_argument("--data",      type=str, default="data/churn.csv",
+                        help="Path to any CSV dataset (default: data/churn.csv)")
+    parser.add_argument("--target",    type=str, default="Churn",
+                        help="Name of the target column (default: Churn)")
     return parser.parse_args()
 
 
@@ -75,13 +79,16 @@ def main():
     print("╚" + "═" * 58 + "╝\n")
 
     # ── Step 1: Data Generation ───────────────────────────────────────────────
-    data_path = "data/churn.csv"
-    if not args.skip_gen:
+    data_path = args.data
+    if not args.skip_gen and data_path == "data/churn.csv":
         print("━━━  STEP 1: DATA GENERATION  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n")
         df = generate_churn_data(n_samples=5_000, churn_rate=0.20)
         save_data(df, path=data_path)
     else:
-        print("[main] Skipping data generation — loading existing file.\n")
+        if not args.skip_gen:
+            print(f"[main] Using custom dataset: {data_path}\n")
+        else:
+            print(f"[main] Skipping data generation — loading: {data_path}\n")
         df = pd.read_csv(data_path)
 
     # ── Step 2: EDA ───────────────────────────────────────────────────────────
@@ -93,9 +100,10 @@ def main():
 
     # ── Step 3: Feature Engineering ───────────────────────────────────────────
     print("━━━  STEP 3: FEATURE ENGINEERING  ━━━━━━━━━━━━━━━━━━━━━━━━\n")
-    df = pd.read_csv(data_path)   # fresh read after generation
+    df = pd.read_csv(data_path)
     X_train, X_test, y_train, y_test, feat_names, artifacts = prepare_data(
         df,
+        target_col   = args.target,
         use_smote    = not args.no_smote,
         use_selection= not args.no_select,
     )
